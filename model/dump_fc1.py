@@ -1,5 +1,6 @@
 import torch
 import timm
+import numpy as np
 
 MODEL_NAME = "deit_tiny_patch16_224"
 
@@ -20,8 +21,16 @@ def fc1_hook(module, inputs, output):
 
 handle = model.blocks[0].mlp.fc1.register_forward_hook(fc1_hook)
 
-# 先用固定 random seed，確保每次都能重現
-torch.manual_seed(0)
+generator = torch.Generator()
+generator.manual_seed(0)
+
+x_image = torch.randn(
+    1, 3, 224, 224,
+    generator=generator
+)
+
+print("Image sample:", x_image[0, 0, 0, 0:8])
+print("Image sum   :", x_image.sum().item())
 
 x = torch.randn(1, 3, 224, 224)
 
@@ -61,3 +70,17 @@ print(bias[0])
 print()
 print("Output [0, 0, 0:8]:")
 print(fc1_output[0, 0, 0:8])
+
+np.savez(
+    "results/fc1_fp32.npz",
+
+    image=x_image.detach().cpu().numpy(),
+
+    input=fc1_input.numpy(),
+    weight=weight.numpy(),
+    bias=bias.numpy(),
+    output=fc1_output.numpy()
+)
+
+print()
+print("Saved results/fc1_fp32.npz")
