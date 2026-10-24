@@ -1,0 +1,177 @@
+diff --git a/riscv/encoding.h b/riscv/encoding.h
+index 433bfe7d..8df5d611 100644
+--- a/riscv/encoding.h
++++ b/riscv/encoding.h
+@@ -605,6 +605,10 @@
+ #define MASK_ABS 0xfff0707f
+ #define MATCH_ABSW 0x6070101b
+ #define MASK_ABSW 0xfff0707f
++#define MATCH_XQMAC8 0x0000000b
++#define MASK_XQMAC8  0xfe00707f
++#define MATCH_XREQUANT 0x0000100b
++#define MASK_XREQUANT  0xfe00707f
+ #define MATCH_ADD 0x33
+ #define MASK_ADD 0xfe00707f
+ #define MATCH_ADD_UW 0x800003b
+@@ -4502,6 +4506,8 @@ DECLARE_INSN(aadd, MATCH_AADD, MASK_AADD)
+ DECLARE_INSN(aaddu, MATCH_AADDU, MASK_AADDU)
+ DECLARE_INSN(abs, MATCH_ABS, MASK_ABS)
+ DECLARE_INSN(absw, MATCH_ABSW, MASK_ABSW)
++DECLARE_INSN(xqmac8, MATCH_XQMAC8, MASK_XQMAC8)
++DECLARE_INSN(xrequant, MATCH_XREQUANT, MASK_XREQUANT)
+ DECLARE_INSN(add, MATCH_ADD, MASK_ADD)
+ DECLARE_INSN(add_uw, MATCH_ADD_UW, MASK_ADD_UW)
+ DECLARE_INSN(addd, MATCH_ADDD, MASK_ADDD)
+diff --git a/riscv/insns/xqmac8.h b/riscv/insns/xqmac8.h
+new file mode 100644
+index 00000000..61a9669e
+--- /dev/null
++++ b/riscv/insns/xqmac8.h
+@@ -0,0 +1,53 @@
++require_rv64;
++
++/*
++ * XQMAC8
++ *
++ * rd = rd +
++ *      sum_{i=0}^{7}
++ *          int8(rs1[i]) * int8(rs2[i])
++ *
++ * rs1 : 8 packed signed INT8 values
++ * rs2 : 8 packed signed INT8 values
++ * rd  : signed INT32 accumulator
++ */
++
++reg_t packed_a = RS1;
++reg_t packed_b = RS2;
++
++/*
++ * Read old rd explicitly because rd is both
++ * source accumulator and destination.
++ */
++int64_t acc =
++    (int64_t)(int32_t)READ_REG(insn.rd());
++
++for (int i = 0; i < 8; i++)
++{
++    int8_t a =
++        (int8_t)(
++            (packed_a >> (8 * i))
++            & 0xff
++        );
++
++    int8_t b =
++        (int8_t)(
++            (packed_b >> (8 * i))
++            & 0xff
++        );
++
++    acc +=
++        (int32_t)a
++        *
++        (int32_t)b;
++}
++
++/*
++ * INT32 accumulator semantics:
++ * truncate to 32 bits and sign-extend to RV64.
++ */
++WRITE_RD(
++    sext32(
++        (uint32_t)acc
++    )
++);
+diff --git a/riscv/insns/xrequant.h b/riscv/insns/xrequant.h
+new file mode 100644
+index 00000000..09735617
+--- /dev/null
++++ b/riscv/insns/xrequant.h
+@@ -0,0 +1,71 @@
++require_rv64;
++
++/*
++ * XREQUANT
++ *
++ * rs1[31:0] : signed INT32 accumulator
++ * rs2[31:0] : signed Q31 multiplier
++ *
++ * product = acc * multiplier
++ *
++ * result =
++ *   round-away-from-zero(product / 2^31)
++ *
++ * followed by signed INT8 saturation [-127, 127].
++ *
++ * Current W8A8 quantization is symmetric:
++ * zero_point = 0.
++ */
++
++int64_t acc =
++    (int64_t)(int32_t)RS1;
++
++int64_t multiplier =
++    (int64_t)(int32_t)RS2;
++
++int64_t product =
++    acc * multiplier;
++
++
++/*
++ * Round-to-nearest, ties away from zero.
++ */
++uint64_t magnitude;
++
++if (product < 0)
++    magnitude = (uint64_t)(-product);
++else
++    magnitude = (uint64_t)product;
++
++int64_t rounded =
++    (int64_t)(
++        (
++            magnitude
++            + (1ULL << 30)
++        )
++        >> 31
++    );
++
++if (product < 0)
++    rounded = -rounded;
++
++
++/*
++ * Signed INT8 saturation.
++ *
++ * We intentionally use [-127, 127], matching
++ * the current symmetric quantization reference.
++ */
++if (rounded > 127)
++    rounded = 127;
++
++if (rounded < -127)
++    rounded = -127;
++
++
++/*
++ * Sign-extend the INT8 result to XLEN=64.
++ */
++WRITE_RD(
++    (reg_t)(int64_t)(int8_t)rounded
++);
+diff --git a/riscv/riscv.mk.in b/riscv/riscv.mk.in
+index df29533a..c387baa1 100644
+--- a/riscv/riscv.mk.in
++++ b/riscv/riscv.mk.in
+@@ -1810,7 +1810,12 @@ riscv_insn_ext_p = \
+ 	pnclipup_h \
+ 	pnclipup_w \
+ 
++riscv_insn_ext_xqmac = \
++	xqmac8 \
++	xrequant \
++
+ riscv_insn_list = \
++	$(riscv_insn_ext_xqmac) \
+ 	$(riscv_insn_ext_i) \
+ 	$(riscv_insn_ext_c) \
+ 	$(riscv_insn_ext_f) \
