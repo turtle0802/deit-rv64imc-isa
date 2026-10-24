@@ -1,0 +1,5 @@
+   text	   data	    bss	    dec	    hex	filename
+ 490398	     16	      8	 490422	  77bb6	build/fc2_bench_b0.elf
+ 490558	     16	      8	 490582	  77c56	build/fc2_bench_b1.elf
+ 490396	     16	      8	 490420	  77bb4	build/fc2_bench_x1.elf
+ 490336	     16	      8	 490360	  77b78	build/fc2_bench_x2.elf

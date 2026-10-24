@@ -1,0 +1,81 @@
+====================================================
+Scalar RV64IMC
+====================================================
+dot8 operations       : 1,000,000
+MAC operations        : 8,000,000
+main instructions     : 34,000,054
+Instructions / dot8   : 34.000054
+Instructions / MAC    : 4.250007
+MAC / instruction     : 0.235294
+Loads / MAC           : 2.000001
+Custom instructions   : 0
+
+Instruction mix
+----------------------------------------------------
+Load              :   16,000,005 ( 47.06%)
+Store             :            6 (  0.00%)
+Multiply          :    8,000,000 ( 23.53%)
+Custom            :            0 (  0.00%)
+Branch/Jump       :    1,000,001 (  2.94%)
+Integer ALU/Other :    9,000,042 ( 26.47%)
+
+Dynamic mnemonic counts
+----------------------------------------------------
+lb             16,000,000
+addw            8,000,000
+mulw            8,000,000
+bnez            1,000,000
+addiw           1,000,000
+addi                   20
+auipc                  17
+sd                      5
+ld                      5
+lui                     2
+sw                      1
+sub                     1
+ret                     1
+snez                    1
+li                      1
+
+====================================================
+Xqmac8
+====================================================
+dot8 operations       : 1,000,000
+MAC operations        : 8,000,000
+main instructions     : 5,000,015
+Instructions / dot8   : 5.000015
+Instructions / MAC    : 0.625002
+MAC / instruction     : 1.599995
+Loads / MAC           : 0.250000
+Custom instructions   : 1,000,000
+
+Instruction mix
+----------------------------------------------------
+Load              :    2,000,000 ( 40.00%)
+Store             :            1 (  0.00%)
+Multiply          :            0 (  0.00%)
+Custom            :    1,000,000 ( 20.00%)
+Branch/Jump       :    1,000,001 ( 20.00%)
+Integer ALU/Other :    1,000,013 ( 20.00%)
+
+Dynamic mnemonic counts
+----------------------------------------------------
+ld              2,000,000
+addiw           1,000,000
+.insn           1,000,000
+bnez            1,000,000
+addi                    4
+auipc                   3
+lui                     2
+ret                     1
+snez                    1
+sw                      1
+sub                     1
+sext.w                  1
+li                      1
+
+====================================================
+Scalar vs Xqmac8
+====================================================
+Instruction reduction : 6.8000x
+Instruction decrease  : 85.29%

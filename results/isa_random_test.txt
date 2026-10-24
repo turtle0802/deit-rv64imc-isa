@@ -1,0 +1,2 @@
+Xqmac8 randomized cases   : 10000 PASS
+Xrequant randomized cases : 10000 PASS

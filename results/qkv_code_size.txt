@@ -1,0 +1,3 @@
+   text	   data	    bss	    dec	    hex	filename
+ 722910	     16	      8	 722934	  b07f6	build/qkv_b0_bench.elf
+ 722846	     16	      8	 722870	  b07b6	build/qkv_x2_bench.elf
